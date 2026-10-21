@@ -31,7 +31,7 @@ function normalize(s){
   s.pages.forEach(p=>{p.description ||= ''; p.blocks ||= []; p.archived=!!p.archived});
   return s;
 }
-let state=load(), currentPageId=null, editMode=false, selectedHabitId=null, habitMode='today', plannerDate=todayKey(), calendarDate=new Date();
+let state=load(), currentPageId=null, editMode=false, selectedHabitId=null, habitMode='today', plannerDate=todayKey(), calendarDate=new Date(), analyticsMode='month', analyticsDate=new Date();
 function save(){localStorage.setItem(STORE,JSON.stringify(state));renderSidebar();renderOverview();renderConstructor()}
 function log(msg){state.history.unshift({id:uid(),at:new Date().toISOString(),msg});state.history=state.history.slice(0,300)}
 function toast(msg){const t=q('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
@@ -140,7 +140,7 @@ function renderPlanner(){
   const tasks=state.tasks.filter(t=>t.date===plannerDate),timed=tasks.filter(t=>t.time),untimed=tasks.filter(t=>!t.time);
   const hours=[...Array.from({length:18},(_,i)=>i+6),0,1,2,3,4,5];
   q('#timeline').innerHTML=hours.map(h=>{
-    const hh=String(h).padStart(2,'0'),items=timed.filter(t=>Number(t.time.slice(0,2))===h);
+    const hh=String(h).padStart(2,'0'),items=timed.filter(t=>Number(t.time.slice(0,2))===h).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
     return '<div class="hour-row"><div class="hour-label">'+hh+':00</div><div class="hour-content">'+items.map(taskChipHTML).join('')+'</div></div>'
   }).join('');
   q('#unscheduled').innerHTML=untimed.length?untimed.map(taskRowHTML).join(''):'<div class="muted tiny">Без времени ничего нет.</div>';
@@ -171,9 +171,42 @@ function renderCalendar(){
 }
 
 /* analytics/history/settings */
+qa('[data-analytics-mode]').forEach(b=>b.onclick=()=>{analyticsMode=b.dataset.analyticsMode;qa('[data-analytics-mode]').forEach(x=>x.classList.toggle('active',x===b));renderAnalytics()});
+q('#analyticsPrev').onclick=()=>{analyticsDate=analyticsMode==='month'?new Date(analyticsDate.getFullYear(),analyticsDate.getMonth()-1,1):new Date(analyticsDate.getFullYear()-1,0,1);renderAnalytics()};
+q('#analyticsNext').onclick=()=>{analyticsDate=analyticsMode==='month'?new Date(analyticsDate.getFullYear(),analyticsDate.getMonth()+1,1):new Date(analyticsDate.getFullYear()+1,0,1);renderAnalytics()};
+q('#analyticsNow').onclick=()=>{analyticsDate=new Date();renderAnalytics()};
+function monthHeatmapHTML(h,y,m){
+  const first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),start=(first.getDay()+6)%7;
+  let cells='<div class="heat-weekdays"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span></div><div class="heat-month-grid">';
+  for(let i=0;i<start;i++)cells+='<i class="heat-day blank"></i>';
+  for(let d=1;d<=days;d++){
+    const key=new Date(y,m,d,12).toISOString().slice(0,10),v=(state.habitLogs[key]||{})[h.id],done=habitDone(h,v),has=v!==undefined&&v!==null&&v!=='';
+    cells+='<i class="heat-day '+(done?'done':has?'partial':'')+(key===todayKey()?' today':'')+'" title="'+d+'"></i>';
+  }
+  cells+='</div>';return cells
+}
+function yearHeatmapHTML(h,y){
+  let out='<div class="year-habit-grid">';
+  for(let m=0;m<12;m++){
+    out+='<div class="mini-month"><strong>'+new Date(y,m,1).toLocaleDateString('ru-RU',{month:'short'})+'</strong><div class="mini-month-grid">';
+    const first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),start=(first.getDay()+6)%7;
+    for(let i=0;i<start;i++)out+='<i class="mini-heat blank"></i>';
+    for(let d=1;d<=days;d++){const key=new Date(y,m,d,12).toISOString().slice(0,10),v=(state.habitLogs[key]||{})[h.id],done=habitDone(h,v),has=v!==undefined&&v!==null&&v!=='';out+='<i class="mini-heat '+(done?'done':has?'partial':'')+(key===todayKey()?' today':'')+'"></i>'}
+    out+='</div></div>'
+  }
+  out+='</div>';return out
+}
 function renderAnalytics(){
-  const total=state.tasks.length,done=state.tasks.filter(t=>t.done).length;q('#anTasks').textContent=done+' / '+total;q('#anPages').textContent=state.pages.filter(p=>!p.archived).length;q('#anHabits').textContent=state.habits.length;
-  q('#habitBars').innerHTML=state.habits.length?state.habits.map(h=>{let n=0;for(let i=0;i<30;i++){const d=new Date();d.setDate(d.getDate()-i);const k=d.toISOString().slice(0,10);if(habitDone(h,(state.habitLogs[k]||{})[h.id]))n++}const pct=Math.round(n/30*100);return '<div class="bar-row"><span>'+esc(h.name)+'</span><div class="bar"><i style="width:'+pct+'%"></i></div><b>'+pct+'%</b></div>'}).join(''):'<div class="empty">Пока нечего анализировать.</div>'
+  q('#anHabits').textContent=state.habits.length;
+  const y=analyticsDate.getFullYear(),m=analyticsDate.getMonth();
+  q('#analyticsPeriodLabel').textContent=analyticsMode==='month'?analyticsDate.toLocaleDateString('ru-RU',{month:'long',year:'numeric'}):String(y);
+  const host=q('#habitCalendars');
+  if(!state.habits.length){q('#anDone').textContent='0';q('#anActiveDays').textContent='0';host.innerHTML='<div class="empty">Пока нет привычек.</div>';return}
+  let doneCount=0;const activeDays=new Set();
+  const start=analyticsMode==='month'?new Date(y,m,1):new Date(y,0,1),end=analyticsMode==='month'?new Date(y,m+1,0):new Date(y,11,31);
+  for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){const key=d.toISOString().slice(0,10),logs=state.habitLogs[key]||{};let dayActive=false;for(const h of state.habits){const v=logs[h.id];if(v!==undefined&&v!==null&&v!==''){dayActive=true;if(habitDone(h,v))doneCount++}}if(dayActive)activeDays.add(key)}
+  q('#anDone').textContent=doneCount;q('#anActiveDays').textContent=activeDays.size;
+  host.innerHTML=state.habits.map(h=>'<article class="panel habit-calendar-card"><div class="section-head"><div><span class="section-kicker">ПРИВЫЧКА</span><h2>'+esc(h.name)+'</h2></div></div>'+(analyticsMode==='month'?monthHeatmapHTML(h,y,m):yearHeatmapHTML(h,y))+'</article>').join('')
 }
 function renderHistory(){q('#historyList').innerHTML=state.history.length?state.history.map(h=>'<div class="history-item"><time>'+new Date(h.at).toLocaleString('ru-RU')+'</time><div>'+esc(h.msg)+'</div></div>').join(''):'<div class="empty">История появится после первых действий.</div>'}
 function renderSettings(){}
@@ -201,6 +234,13 @@ function openPage(id){currentPageId=id;editMode=false;const p=page();if(!p)retur
 function page(){return state.pages.find(p=>p.id===currentPageId)}
 function pageProgress(p=page()){let total=0,done=0;for(const b of p?.blocks||[])if(b.type==='list')for(const g of b.data.groups||[])for(const i of g.items||[]){total++;if(i.done)done++}return{total,done,pct:total?Math.round(done/total*100):0}}
 q('#editPageBtn').onclick=()=>{editMode=!editMode;renderPage()};
+q('#savePageEditsBtn').onclick=()=>{
+  commitInlinePageEdits();
+  save();
+  toast('Страница сохранена');
+  editMode=false;
+  renderPage()
+};
 q('#pageSettingsBtn').onclick=()=>openPageModal(page());
 q('#archivePageBtn').onclick=()=>{const p=page();if(p&&confirm('Архивировать страницу «'+p.name+'»?')){p.archived=true;log('Архивирована страница «'+p.name+'»');save();showView('constructor')}};
 q('#addBlockBtn').onclick=()=>openModal('blockPaletteModal');
@@ -229,7 +269,8 @@ function addBlock(type){
 }
 function renderPage(){
   const p=page();if(!p)return;q('#title').textContent=p.name;q('#pageDescriptionView').textContent=p.description||'';
-  q('#editPageBtn').textContent=editMode?'Готово':'Редактировать';
+  q('#editPageBtn').textContent=editMode?'Выйти без сохранения':'Редактировать';
+  q('#savePageEditsBtn').style.display=editMode?'inline-block':'none';
   q('#addBlockBtn').style.display=editMode?'inline-block':'none';q('#pageSettingsBtn').style.display=editMode?'inline-block':'none';q('#archivePageBtn').style.display=editMode?'inline-block':'none';
   const host=q('#blocks');host.innerHTML=p.blocks.length?p.blocks.map(blockHTML).join(''):'<div class="empty" style="grid-column:1/-1">Страница пустая. Нажми «Редактировать», затем «+ Блок».</div>';
   wirePage(host)
@@ -272,9 +313,13 @@ function listBlockHTML(b,cls,head){
   if(editMode)html+='<button class="btn small" style="margin-top:9px" data-add-group="'+b.id+'">+ Группа / предмет</button>';
   html+='</section>';return html
 }
+function commitInlinePageEdits(){
+  q('#blocks')?.querySelectorAll('[data-inline-block-title]').forEach(x=>{const b=blockBy(x.dataset.inlineBlockTitle);if(b)b.data.title=x.value.trim()||'Без названия'});
+  q('#blocks')?.querySelectorAll('[data-inline-heading]').forEach(x=>{const b=blockBy(x.dataset.inlineHeading);if(b)b.data.text=x.value.trim()||'Раздел'});
+}
 function wirePage(host){
-  host.querySelectorAll('[data-block-up]').forEach(x=>x.onclick=()=>moveBlock(x.dataset.blockUp,-1));host.querySelectorAll('[data-block-down]').forEach(x=>x.onclick=()=>moveBlock(x.dataset.blockDown,1));
-  host.querySelectorAll('[data-block-size]').forEach(x=>x.onclick=()=>cycleSize(x.dataset.blockSize));host.querySelectorAll('[data-block-del]').forEach(x=>x.onclick=()=>deleteBlock(x.dataset.blockDel));host.querySelectorAll('[data-block-edit]').forEach(x=>x.onclick=()=>openBlockEdit(x.dataset.blockEdit));
+  host.querySelectorAll('[data-block-up]').forEach(x=>x.onclick=()=>{commitInlinePageEdits();moveBlock(x.dataset.blockUp,-1)});host.querySelectorAll('[data-block-down]').forEach(x=>x.onclick=()=>moveBlock(x.dataset.blockDown,1));
+  host.querySelectorAll('[data-block-size]').forEach(x=>x.onclick=()=>{commitInlinePageEdits();cycleSize(x.dataset.blockSize)});host.querySelectorAll('[data-block-del]').forEach(x=>x.onclick=()=>deleteBlock(x.dataset.blockDel));host.querySelectorAll('[data-block-edit]').forEach(x=>x.onclick=()=>openBlockEdit(x.dataset.blockEdit));
   host.querySelectorAll('[data-list-check]').forEach(x=>x.onchange=()=>toggleListItem(x.dataset.listCheck,x.checked));host.querySelectorAll('[data-add-group]').forEach(x=>x.onclick=()=>addGroup(x.dataset.addGroup));
   host.querySelectorAll('[data-edit-group]').forEach(x=>x.onclick=()=>editGroup(x.dataset.editGroup));host.querySelectorAll('[data-del-group]').forEach(x=>x.onclick=()=>deleteGroup(x.dataset.delGroup));
   host.querySelectorAll('[data-add-item]').forEach(x=>x.onclick=()=>addItem(x.dataset.addItem));host.querySelectorAll('[data-new-item-input]').forEach(x=>x.onkeydown=e=>{if(e.key==='Enter')addItem(x.dataset.newItemInput)});
