@@ -365,7 +365,7 @@ q('#saveBlockEdit').onclick=()=>{const b=blockBy(editingBlockId),fd=new FormData
 
 /* initialization */
 q('#mobilePages').onclick=()=>showView('constructor');
-q('#goConstructor').onclick=()=>showView('constructor');
-q('#goHabits').onclick=()=>showView('habits');
-q('#goPlanner').onclick=()=>showView('planner');
+if(q('#goConstructor'))q('#goConstructor').onclick=()=>showView('constructor');
+if(q('#goHabits'))q('#goHabits').onclick=()=>showView('habits');
+if(q('#goPlanner'))q('#goPlanner').onclick=()=>showView('planner');
 renderSidebar();renderOverview();renderConstructor();renderCalendar();
