@@ -138,11 +138,12 @@ q('#saveTask').onclick=()=>{
 function renderPlanner(){
   q('#plannerDateLabel').textContent=fmtDate(plannerDate,{weekday:'long',day:'numeric',month:'long'});
   const tasks=state.tasks.filter(t=>t.date===plannerDate),timed=tasks.filter(t=>t.time),untimed=tasks.filter(t=>!t.time);
-  const hours=[...Array.from({length:18},(_,i)=>i+6),0,1,2,3,4,5];
-  q('#timeline').innerHTML=hours.map(h=>{
+  const hours=[...Array.from({length:12},(_,i)=>i+6),...Array.from({length:6},(_,i)=>i+18),0,1,2,3,4,5];
+  const columns=[hours.slice(0,12),hours.slice(12)];
+  q('#timeline').innerHTML=columns.map((col,index)=>'<div class="schedule-column" data-part="'+index+'">'+col.map(h=>{
     const hh=String(h).padStart(2,'0'),items=timed.filter(t=>Number(t.time.slice(0,2))===h).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-    return '<div class="hour-row"><div class="hour-label">'+hh+':00</div><div class="hour-content">'+items.map(taskChipHTML).join('')+'</div></div>'
-  }).join('');
+    return '<section class="schedule-hour"><div class="schedule-hour-label">'+hh+':00</div><div class="schedule-hour-content">'+(items.length?items.map(taskChipHTML).join(''):'<span class="hour-empty">—</span>')+'</div></section>'
+  }).join('')+'</div>').join('');
   q('#unscheduled').innerHTML=untimed.length?untimed.map(taskRowHTML).join(''):'<div class="muted tiny">Без времени ничего нет.</div>';
   wireTaskChecks(q('#planner'));q('#planner').querySelectorAll('[data-edit-task]').forEach(b=>b.onclick=()=>openTaskModal(state.tasks.find(t=>t.id===b.dataset.editTask)));
 }
@@ -172,41 +173,59 @@ function renderCalendar(){
 
 /* analytics/history/settings */
 qa('[data-analytics-mode]').forEach(b=>b.onclick=()=>{analyticsMode=b.dataset.analyticsMode;qa('[data-analytics-mode]').forEach(x=>x.classList.toggle('active',x===b));renderAnalytics()});
-q('#analyticsPrev').onclick=()=>{analyticsDate=analyticsMode==='month'?new Date(analyticsDate.getFullYear(),analyticsDate.getMonth()-1,1):new Date(analyticsDate.getFullYear()-1,0,1);renderAnalytics()};
-q('#analyticsNext').onclick=()=>{analyticsDate=analyticsMode==='month'?new Date(analyticsDate.getFullYear(),analyticsDate.getMonth()+1,1):new Date(analyticsDate.getFullYear()+1,0,1);renderAnalytics()};
+q('#analyticsPrev').onclick=()=>{analyticsMode==='year'?analyticsDate.setFullYear(analyticsDate.getFullYear()-1):analyticsDate.setMonth(analyticsDate.getMonth()-1);renderAnalytics()};
+q('#analyticsNext').onclick=()=>{analyticsMode==='year'?analyticsDate.setFullYear(analyticsDate.getFullYear()+1):analyticsDate.setMonth(analyticsDate.getMonth()+1);renderAnalytics()};
 q('#analyticsNow').onclick=()=>{analyticsDate=new Date();renderAnalytics()};
-function monthHeatmapHTML(h,y,m){
-  const first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),start=(first.getDay()+6)%7;
-  let cells='<div class="heat-weekdays"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span></div><div class="heat-month-grid">';
-  for(let i=0;i<start;i++)cells+='<i class="heat-day blank"></i>';
-  for(let d=1;d<=days;d++){
-    const key=new Date(y,m,d,12).toISOString().slice(0,10),v=(state.habitLogs[key]||{})[h.id],done=habitDone(h,v),has=v!==undefined&&v!==null&&v!=='';
-    cells+='<i class="heat-day '+(done?'done':has?'partial':'')+(key===todayKey()?' today':'')+'" title="'+d+'"></i>';
-  }
-  cells+='</div>';return cells
+q('#analyticsSearch').oninput=renderAnalytics;
+function analyticsDateKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function analyticsAddDays(key,n){const d=new Date(key+'T12:00:00');d.setDate(d.getDate()+n);return analyticsDateKey(d)}
+function analyticsRange(){
+  const y=analyticsDate.getFullYear(),m=analyticsDate.getMonth();
+  return analyticsMode==='year'
+    ? {start:y+'-01-01',end:y+'-12-31'}
+    : {start:y+'-'+String(m+1).padStart(2,'0')+'-01',end:analyticsDateKey(new Date(y,m+1,0,12))}
 }
-function yearHeatmapHTML(h,y){
-  let out='<div class="year-habit-grid">';
-  for(let m=0;m<12;m++){
-    out+='<div class="mini-month"><strong>'+new Date(y,m,1).toLocaleDateString('ru-RU',{month:'short'})+'</strong><div class="mini-month-grid">';
-    const first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),start=(first.getDay()+6)%7;
-    for(let i=0;i<start;i++)out+='<i class="mini-heat blank"></i>';
-    for(let d=1;d<=days;d++){const key=new Date(y,m,d,12).toISOString().slice(0,10),v=(state.habitLogs[key]||{})[h.id],done=habitDone(h,v),has=v!==undefined&&v!==null&&v!=='';out+='<i class="mini-heat '+(done?'done':has?'partial':'')+(key===todayKey()?' today':'')+'"></i>'}
-    out+='</div></div>'
-  }
-  out+='</div>';return out
+function analyticsDateSpan(start,end){const out=[];for(let d=start;d<=end;d=analyticsAddDays(d,1))out.push(d);return out}
+function renderAnalyticsInsights(habits,dates){
+  const today=todayKey(),elapsed=dates.filter(d=>d<=today);
+  let planned=0,done=0,active=new Set();
+  elapsed.forEach(date=>{
+    const logs=state.habitLogs[date]||{};
+    habits.forEach(h=>{
+      planned++;
+      const v=logs[h.id];
+      if(v!==undefined&&v!==null&&v!==''){active.add(date);if(habitDone(h,v))done++}
+    });
+  });
+  const pct=planned?Math.round(done/planned*100):0;
+  q('#analyticsInsights').innerHTML=[
+    ['Ритм периода',planned?pct+'%':'—',planned?done+' выполнено':'Пока нет отметок'],
+    ['Дней с отметками',String(active.size),'за выбранный период'],
+    ['Привычек',String(habits.length),'в аналитике'],
+    ['Отметок',String(done),analyticsMode==='year'?'за год':'за месяц']
+  ].map(([label,value,note])=>'<article class="insight-card"><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong><p>'+esc(note)+'</p></article>').join('')
 }
 function renderAnalytics(){
-  q('#anHabits').textContent=state.habits.length;
-  const y=analyticsDate.getFullYear(),m=analyticsDate.getMonth();
-  q('#analyticsPeriodLabel').textContent=analyticsMode==='month'?analyticsDate.toLocaleDateString('ru-RU',{month:'long',year:'numeric'}):String(y);
-  const host=q('#habitCalendars');
-  if(!state.habits.length){q('#anDone').textContent='0';q('#anActiveDays').textContent='0';host.innerHTML='<div class="empty">Пока нет привычек.</div>';return}
-  let doneCount=0;const activeDays=new Set();
-  const start=analyticsMode==='month'?new Date(y,m,1):new Date(y,0,1),end=analyticsMode==='month'?new Date(y,m+1,0):new Date(y,11,31);
-  for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){const key=d.toISOString().slice(0,10),logs=state.habitLogs[key]||{};let dayActive=false;for(const h of state.habits){const v=logs[h.id];if(v!==undefined&&v!==null&&v!==''){dayActive=true;if(habitDone(h,v))doneCount++}}if(dayActive)activeDays.add(key)}
-  q('#anDone').textContent=doneCount;q('#anActiveDays').textContent=activeDays.size;
-  host.innerHTML=state.habits.map(h=>'<article class="panel habit-calendar-card"><div class="section-head"><div><span class="section-kicker">ПРИВЫЧКА</span><h2>'+esc(h.name)+'</h2></div></div>'+(analyticsMode==='month'?monthHeatmapHTML(h,y,m):yearHeatmapHTML(h,y))+'</article>').join('')
+  const {start,end}=analyticsRange(),dates=analyticsDateSpan(start,end),today=todayKey(),query=(q('#analyticsSearch')?.value||'').trim().toLowerCase();
+  q('#analyticsPeriodLabel').textContent=analyticsMode==='year'?String(analyticsDate.getFullYear()):analyticsDate.toLocaleDateString('ru-RU',{month:'long',year:'numeric'});
+  const habits=state.habits.filter(h=>!query||h.name.toLowerCase().includes(query));
+  renderAnalyticsInsights(habits,dates);
+  const root=q('#habitCalendars');
+  if(!habits.length){root.innerHTML='<div class="empty">Пока нет привычек.</div>';return}
+  root.innerHTML=habits.map(h=>{
+    const elapsed=dates.filter(d=>d<=today),done=elapsed.filter(d=>habitDone(h,(state.habitLogs[d]||{})[h.id])).length;
+    const monday=analyticsAddDays(start,-((new Date(start+'T12:00:00').getDay()+6)%7));
+    const endDate=new Date(end+'T12:00:00'),tail=6-((endDate.getDay()+6)%7),last=analyticsAddDays(end,tail),boardDates=analyticsDateSpan(monday,last);
+    const cells=boardDates.map(d=>{
+      if(d<start||d>end)return '<span class="habit-pixel outside"></span>';
+      const v=(state.habitLogs[d]||{})[h.id],has=v!==undefined&&v!==null&&v!=='',doneCell=habitDone(h,v),future=d>today;
+      const progress=h.type==='bool'?(doneCell?1:0):Math.min(1,Math.max(0,Number(v||0)/Math.max(1,Number(h.target||1))));
+      const cls=[has&&progress>0?'has-value':'',doneCell&&has?'complete':'',future?'future':'',d===today?'today':''].join(' ');
+      const label=has?(h.type==='bool'?(doneCell?'выполнено':'нет'):String(v)+' '+(h.unit||'')):'нет отметки';
+      return '<button class="habit-pixel '+cls+'" style="--fill:'+(has?Math.max(.18,progress):0)+'" title="'+esc(fmtDate(d,{day:'numeric',month:'long'})+' · '+label)+'" '+(future?'disabled':'')+'>'+(analyticsMode==='month'?new Date(d+'T12:00:00').getDate():'')+'</button>'
+    }).join('');
+    return '<article class="habit-calendar"><div class="habit-calendar-head"><div class="habit-calendar-title"><div><div class="section-kicker">ПРИВЫЧКА</div><h2>'+esc(h.name)+'</h2><p>'+esc(h.type==='number'?((h.target||1)+' '+(h.unit||'')):'сделано / нет')+'</p></div></div><div class="habit-calendar-summary"><strong>'+done+' из '+elapsed.length+'</strong><span>дней выполнено</span></div></div><div class="habit-grid-scroll"><div class="'+(analyticsMode==='year'?'habit-year-board':'habit-month-board')+'">'+(analyticsMode==='year'?'<div class="habit-month-labels">'+['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'].map(m=>'<span>'+m+'</span>').join('')+'</div>':'')+'<div class="habit-board-body"><div class="habit-week-labels"><span>Пн</span><span></span><span>Ср</span><span></span><span>Пт</span><span></span><span>Вс</span></div><div class="habit-pixels" style="--weeks:'+(boardDates.length/7)+'">'+cells+'</div></div></div></div><p class="habit-calendar-footer"><span>Одна клеточка — один день.</span></p></article>'
+  }).join('')
 }
 function renderHistory(){q('#historyList').innerHTML=state.history.length?state.history.map(h=>'<div class="history-item"><time>'+new Date(h.at).toLocaleString('ru-RU')+'</time><div>'+esc(h.msg)+'</div></div>').join(''):'<div class="empty">История появится после первых действий.</div>'}
 function renderSettings(){}
