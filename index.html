@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1717">
+<title>Система 2</title>
+<style>
+:root{--bg:#07100f;--panel:#0d1b19;--panel2:#12241f;--line:#294139;--text:#eef7f3;--muted:#8da49d;--green:#66c3a2;--blue:#78aee8;--amber:#d6aa61;--red:#d67b82;--safe:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15% 0,#16342c 0,transparent 32%),#07100f;color:var(--text);font:14px/1.45 Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+button,input,textarea,select{font:inherit}.shell{display:grid;grid-template-columns:230px 1fr;min-height:100vh}.side{position:fixed;inset:0 auto 0 0;width:230px;padding:18px 12px;border-right:1px solid var(--line);background:#081311ef}.brand{font-size:21px;font-weight:850;padding:10px 12px;margin-bottom:17px}.nav{display:grid;gap:5px}.nav button,.pageLink{border:0;background:transparent;color:#9bb0aa;border-radius:11px;padding:10px 12px;text-align:left;font-weight:700;cursor:pointer}.nav button.active,.nav button:hover,.pageLink:hover{background:#173029;color:#fff}.pagesHead{font-size:10px;letter-spacing:.12em;color:#748982;margin:18px 10px 7px;display:flex;justify-content:space-between}.pageLink{width:100%;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.main{grid-column:2;padding:22px 28px 110px;max-width:1450px;width:100%}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px}.top h1{margin:2px 0;font-size:29px}.eyebrow{font-size:10px;letter-spacing:.13em;color:var(--green);font-weight:850}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:#142620;color:var(--text);padding:9px 13px;border-radius:10px;font-weight:750;cursor:pointer}.btn.primary{background:var(--green);color:#062018;border-color:#79d5b5}.btn.ghost{background:transparent}.panel{background:linear-gradient(145deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 14px 40px #0004}.view{display:none}.view.active{display:block}
+.hero{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.hero h2{font-size:30px;margin:5px 0 8px}.muted{color:var(--muted)}.quick{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.quick .panel{min-height:120px}.quick strong{font-size:26px;display:block}
+.builderGrid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;align-items:start}.block{position:relative;grid-column:span 6;min-height:120px}.block.s{grid-column:span 4}.block.m{grid-column:span 6}.block.l{grid-column:span 8}.block.full{grid-column:1/-1}.blockHead{display:flex;justify-content:space-between;gap:10px;align-items:start}.block h3{margin:0 0 8px}.blockTools{display:flex;gap:4px;opacity:.7}.blockTools button{border:0;background:#193029;color:#cde0da;border-radius:7px;padding:4px 7px;cursor:pointer}.metric{font-size:34px;font-weight:850}.progress{height:9px;border-radius:99px;background:#1d302b;overflow:hidden;margin-top:12px}.progress i{display:block;height:100%;background:var(--green)}.checklist{display:grid;gap:8px}.check{display:flex;gap:8px;align-items:center}.check input{width:18px;height:18px}.note{white-space:pre-wrap;color:#cbd9d5}.miniTasks{display:grid;gap:7px}.miniTask{padding:9px 10px;border:1px solid #294139;border-radius:10px;background:#0a1715}.metricInput{display:flex;gap:7px;margin-top:10px}.metricInput input{max-width:120px}.spark{height:100px;display:flex;align-items:end;gap:5px;padding-top:10px}.spark i{flex:1;min-width:4px;background:linear-gradient(#73d0ae,#356b5a);border-radius:5px 5px 2px 2px}.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.calendar span{aspect-ratio:1;border:1px solid #28433b;border-radius:7px;display:grid;place-items:center;font-size:11px;color:#adc0ba}.calendar span.today{background:#23463c;color:white;border-color:#6bb89d}
+.templates,.blockPalette{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.template,.paletteItem{border:1px solid var(--line);background:#0c1917;color:var(--text);border-radius:12px;padding:14px;text-align:left;cursor:pointer}.template:hover,.paletteItem:hover{border-color:#5b9c86;background:#12251f}
+.empty{padding:38px;text-align:center;color:var(--muted)}.modal{position:fixed;inset:0;display:none;place-items:center;background:#000a;z-index:50;padding:16px}.modal.open{display:grid}.dialog{width:min(640px,100%);max-height:90vh;overflow:auto;background:#0b1717;border:1px solid #355149;border-radius:18px;padding:20px}.dialog h2{margin-top:0}.form{display:grid;gap:12px}.form input,.form textarea,.form select{width:100%;border:1px solid #2d463f;background:#101e1d;color:white;border-radius:10px;padding:11px 12px}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}.mobilebar{display:none}
+@media(max-width:760px){.shell{display:block}.side{display:none}.main{grid-column:auto;padding:14px 12px calc(96px + var(--safe))}.top{align-items:flex-start}.top h1{font-size:24px}.hero{grid-template-columns:1fr}.builderGrid{grid-template-columns:1fr}.block,.block.s,.block.m,.block.l,.block.full{grid-column:1/-1}.quick{grid-template-columns:1fr 1fr}.mobilebar{position:fixed;display:grid;grid-template-columns:repeat(4,1fr);left:9px;right:9px;bottom:calc(9px + var(--safe));z-index:40;padding:6px;border:1px solid var(--line);background:#081311f2;border-radius:17px;backdrop-filter:blur(18px)}.mobilebar button{border:0;background:transparent;color:#8ca199;padding:8px 3px;border-radius:10px;font-size:11px}.mobilebar button.active{background:#173029;color:white}.builderGrid{gap:10px}.panel{padding:14px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="side">
+  <div class="brand">Система 2</div>
+  <div class="nav">
+    <button class="active" data-view="overview">Обзор</button>
+    <button data-view="constructor">Конструктор</button>
+  </div>
+  <div class="pagesHead"><span>МОИ СТРАНИЦЫ</span><span>+</span></div>
+  <div id="sidePages"></div>
+</aside>
+
+<main class="main">
+  <header class="top">
+    <div><div class="eyebrow" id="eyebrow">СЕГОДНЯ</div><h1 id="title">Обзор</h1></div>
+    <div class="actions">
+      <button class="btn ghost" id="exportBtn">Экспорт</button>
+      <button class="btn primary" id="newPageBtn">Новая страница</button>
+    </div>
+  </header>
+
+  <section id="overview" class="view active">
+    <div class="hero">
+      <div class="panel">
+        <div class="eyebrow">СИСТЕМА</div>
+        <h2>Собирай под себя</h2>
+        <p class="muted">Создавай страницы под цели, учёбу, проекты, тело, деньги или любой очередной жизненный эксперимент. Блоки можно добавлять, переставлять и менять без правки кода.</p>
+        <div class="actions"><button class="btn primary" data-go-constructor>Открыть конструктор</button></div>
+      </div>
+      <div class="quick">
+        <div class="panel"><span class="muted">Страниц</span><strong id="pageCount">0</strong></div>
+        <div class="panel"><span class="muted">Блоков</span><strong id="blockCount">0</strong></div>
+        <div class="panel"><span class="muted">Сегодня</span><strong id="todayLabel">—</strong></div>
+        <div class="panel"><span class="muted">Хранение</span><strong style="font-size:17px">локально</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="constructor" class="view">
+    <div class="panel" style="margin-bottom:14px">
+      <div class="eyebrow">КОНСТРУКТОР</div>
+      <h2 style="margin:4px 0 8px">Создай свою страницу</h2>
+      <p class="muted">Начни с шаблона или с пустой страницы. Потом добавляй любые блоки.</p>
+      <div class="templates">
+        <button class="template" data-template="blank"><b>Пустая</b><br><span class="muted">чистый лист</span></button>
+        <button class="template" data-template="goal"><b>Цель</b><br><span class="muted">прогресс + чеклист</span></button>
+        <button class="template" data-template="study"><b>Учёба</b><br><span class="muted">метрики + дела</span></button>
+        <button class="template" data-template="project"><b>Проект</b><br><span class="muted">этапы + заметки</span></button>
+        <button class="template" data-template="body"><b>Тело и спорт</b><br><span class="muted">метрики + график</span></button>
+      </div>
+    </div>
+    <div id="constructorEmpty" class="panel empty">Создай страницу, и она появится здесь и в меню слева.</div>
+  </section>
+
+  <section id="customPage" class="view">
+    <div class="actions" style="margin-bottom:12px">
+      <button class="btn" id="addBlockBtn">+ Добавить блок</button>
+      <button class="btn ghost" id="renamePageBtn">Переименовать</button>
+      <button class="btn ghost" id="archivePageBtn">Архивировать</button>
+    </div>
+    <div id="blocks" class="builderGrid"></div>
+  </section>
+</main>
+
+<nav class="mobilebar">
+<button class="active" data-view="overview">Обзор</button>
+<button data-view="constructor">Конструктор</button>
+<button id="mobilePagesBtn">Страницы</button>
+<button id="mobileAddBtn">+ Страница</button>
+</nav>
+
+<div class="modal" id="pageModal"><div class="dialog">
+<h2>Новая страница</h2>
+<div class="form">
+<label>Название<input id="pageName" placeholder="Например: Стажировка"></label>
+<label>Шаблон<select id="pageTemplate"><option value="blank">Пустая</option><option value="goal">Цель</option><option value="study">Учёба</option><option value="project">Проект</option><option value="body">Тело и спорт</option></select></label>
+<div class="actions"><button class="btn primary" id="createPage">Создать</button><button class="btn" data-close="pageModal">Отмена</button></div>
+</div></div></div>
+
+<div class="modal" id="blockModal"><div class="dialog">
+<h2>Добавить блок</h2>
+<div class="blockPalette" id="palette"></div>
+<div class="actions" style="margin-top:14px"><button class="btn" data-close="blockModal">Закрыть</button></div>
+</div></div>
+
+<script>
+const STORE='systema2_constructor_v1';
+const types={
+ heading:'Заголовок',text:'Текст',goal:'Цель / прогресс',metric:'Метрика',checklist:'Чеклист',
+ tasks:'Список дел',habit:'Привычка',timer:'Таймер',chart:'График',calendar:'Календарь',image:'Обложка'
+};
+const presets={
+ blank:[],
+ goal:[['goal',{title:'Главная цель',value:35,target:100}],['checklist',{title:'Этапы',items:['Первый шаг','Второй шаг','Третий шаг']}],['text',{title:'Заметка',text:'Почему эта цель важна и что считать успехом.'}]],
+ study:[['heading',{title:'Учёба'}],['metric',{title:'Решено задач',value:0,unit:'задач'}],['goal',{title:'Прогресс подготовки',value:45,target:100}],['tasks',{title:'Ближайшее',items:['Повторить SQL','Решить 3 задачи','Разобрать ошибки']}]],
+ project:[['heading',{title:'Проект'}],['goal',{title:'Готовность',value:25,target:100}],['checklist',{title:'Этапы',items:['Идея','Прототип','Тестирование','Релиз']}],['text',{title:'Заметки',text:'Здесь можно хранить текущие решения и мысли.'}]],
+ body:[['metric',{title:'Вес',value:62,unit:'кг'}],['metric',{title:'Талия',value:69,unit:'см'}],['chart',{title:'Динамика',values:[40,44,42,48,51,49,55]}],['checklist',{title:'Неделя',items:['Тренировка 1','Тренировка 2','Прогулка']}]]
+};
+let state=load(); let current=null;
+function load(){try{return JSON.parse(localStorage.getItem(STORE))||{pages:[]}}catch{return{pages:[]}}}
+function save(){localStorage.setItem(STORE,JSON.stringify(state));renderSidebar();renderStats()}
+function uid(){return Math.random().toString(36).slice(2,10)}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function show(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===id));if(id==='overview'){title.textContent='Обзор';eyebrow.textContent='СЕГОДНЯ'}if(id==='constructor'){title.textContent='Конструктор';eyebrow.textContent='МОИ СТРАНИЦЫ'}}
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>show(b.dataset.view));
+document.querySelectorAll('[data-go-constructor]').forEach(b=>b.onclick=()=>show('constructor'));
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
+function openNew(template='blank'){pageTemplate.value=template;pageName.value='';openModal('pageModal');setTimeout(()=>pageName.focus(),50)}
+newPageBtn.onclick=()=>openNew(); mobileAddBtn.onclick=()=>openNew();
+document.querySelectorAll('[data-template]').forEach(b=>b.onclick=()=>openNew(b.dataset.template));
+createPage.onclick=()=>{const name=pageName.value.trim()||'Новая страница';const t=pageTemplate.value;const p={id:uid(),name,archived:false,blocks:(presets[t]||[]).map(([type,data])=>({id:uid(),type,size:'m',data:structuredClone(data)}))};state.pages.push(p);save();closeModal('pageModal');openPage(p.id)}
+function renderSidebar(){sidePages.innerHTML='';state.pages.filter(p=>!p.archived).forEach(p=>{const b=document.createElement('button');b.className='pageLink';b.textContent='• '+p.name;b.onclick=()=>openPage(p.id);sidePages.appendChild(b)});constructorEmpty.style.display=state.pages.some(p=>!p.archived)?'none':'block'}
+function renderStats(){pageCount.textContent=state.pages.filter(p=>!p.archived).length;blockCount.textContent=state.pages.reduce((n,p)=>n+p.blocks.length,0);todayLabel.textContent=new Date().toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'})}
+function openPage(id){current=id;const p=state.pages.find(x=>x.id===id);if(!p)return;show('customPage');title.textContent=p.name;eyebrow.textContent='МОЯ СТРАНИЦА';renderBlocks()}
+function currentPage(){return state.pages.find(x=>x.id===current)}
+function moveBlock(id,dir){const p=currentPage();const i=p.blocks.findIndex(b=>b.id===id),j=i+dir;if(i<0||j<0||j>=p.blocks.length)return;[p.blocks[i],p.blocks[j]]=[p.blocks[j],p.blocks[i]];save();renderBlocks()}
+function cycleSize(b){const sizes=['s','m','l','full'];b.size=sizes[(sizes.indexOf(b.size)+1)%sizes.length];save();renderBlocks()}
+function removeBlock(id){const p=currentPage();p.blocks=p.blocks.filter(b=>b.id!==id);save();renderBlocks()}
+function toolHTML(b){return '<div class="blockTools"><button data-up="'+b.id+'">↑</button><button data-down="'+b.id+'">↓</button><button data-size="'+b.id+'">'+b.size.toUpperCase()+'</button><button data-del="'+b.id+'">×</button></div>'}
+function renderBlocks(){const p=currentPage();blocks.innerHTML='';p.blocks.forEach(b=>{const el=document.createElement('article');el.className='panel block '+b.size;el.innerHTML=blockHTML(b);blocks.appendChild(el)});blocks.querySelectorAll('[data-up]').forEach(x=>x.onclick=()=>moveBlock(x.dataset.up,-1));blocks.querySelectorAll('[data-down]').forEach(x=>x.onclick=()=>moveBlock(x.dataset.down,1));blocks.querySelectorAll('[data-size]').forEach(x=>x.onclick=()=>cycleSize(currentPage().blocks.find(b=>b.id===x.dataset.size)));blocks.querySelectorAll('[data-del]').forEach(x=>x.onclick=()=>removeBlock(x.dataset.del));blocks.querySelectorAll('[data-check]').forEach(x=>x.onchange=e=>{const [bid,i]=x.dataset.check.split(':');const b=currentPage().blocks.find(y=>y.id===bid);b.data.done=b.data.done||{};b.data.done[i]=e.target.checked;save()});blocks.querySelectorAll('[data-metric]').forEach(x=>x.onchange=e=>{const b=currentPage().blocks.find(y=>y.id===x.dataset.metric);b.data.value=Number(e.target.value)||0;save();renderBlocks()})}
+function blockHTML(b){const d=b.data||{};const head='<div class="blockHead"><div><div class="eyebrow">'+esc(types[b.type]||b.type)+'</div></div>'+toolHTML(b)+'</div>';if(b.type==='heading')return head+'<h2>'+esc(d.title||'Заголовок')+'</h2>';if(b.type==='text')return head+'<h3>'+esc(d.title||'Текст')+'</h3><div class="note">'+esc(d.text||'Заметка')+'</div>';if(b.type==='goal'){const pct=Math.max(0,Math.min(100,Math.round((Number(d.value)||0)/(Number(d.target)||100)*100)));return head+'<h3>'+esc(d.title||'Цель')+'</h3><div class="metric">'+pct+'%</div><div class="progress"><i style="width:'+pct+'%"></i></div><p class="muted">'+esc(d.value||0)+' / '+esc(d.target||100)+'</p>'}
+if(b.type==='metric')return head+'<h3>'+esc(d.title||'Метрика')+'</h3><div class="metric">'+esc(d.value||0)+' <small>'+esc(d.unit||'')+'</small></div><div class="metricInput"><input type="number" data-metric="'+b.id+'" value="'+esc(d.value||0)+'"></div>';
+if(b.type==='checklist'){const arr=d.items||[];return head+'<h3>'+esc(d.title||'Чеклист')+'</h3><div class="checklist">'+arr.map((x,i)=>'<label class="check"><input type="checkbox" data-check="'+b.id+':'+i+'" '+(d.done&&d.done[i]?'checked':'')+'><span>'+esc(x)+'</span></label>').join('')+'</div>'}
+if(b.type==='tasks'){const arr=d.items||[];return head+'<h3>'+esc(d.title||'Дела')+'</h3><div class="miniTasks">'+arr.map(x=>'<div class="miniTask">'+esc(x)+'</div>').join('')+'</div>'}
+if(b.type==='habit')return head+'<h3>'+esc(d.title||'Привычка')+'</h3><p class="muted">Привязку к общей базе привычек добавим следующим этапом.</p>';
+if(b.type==='timer')return head+'<h3>'+esc(d.title||'Таймер')+'</h3><div class="metric">'+esc(d.minutes||25)+':00</div>';
+if(b.type==='chart'){const vals=d.values||[2,4,3,6,5,7,8];const m=Math.max(...vals,1);return head+'<h3>'+esc(d.title||'График')+'</h3><div class="spark">'+vals.map(v=>'<i style="height:'+Math.max(8,v/m*100)+'%"></i>').join('')+'</div>'}
+if(b.type==='calendar'){const now=new Date(),days=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();return head+'<h3>'+esc(d.title||'Календарь')+'</h3><div class="calendar">'+Array.from({length:days},(_,i)=>'<span class="'+(i+1===now.getDate()?'today':'')+'">'+(i+1)+'</span>').join('')+'</div>'}
+if(b.type==='image')return head+'<h3>'+esc(d.title||'Обложка')+'</h3><div style="height:120px;border-radius:12px;background:linear-gradient(135deg,#21473c,#1b3150);display:grid;place-items:center;color:#cfe4dc">Изображение / обложка</div>';return head}
+palette.innerHTML=Object.entries(types).map(([k,v])=>'<button class="paletteItem" data-type="'+k+'"><b>'+v+'</b></button>').join('');
+palette.querySelectorAll('[data-type]').forEach(x=>x.onclick=()=>{const p=currentPage();const type=x.dataset.type;const defaults={heading:{title:'Новый раздел'},text:{title:'Заметка',text:'Текст…'},goal:{title:'Цель',value:0,target:100},metric:{title:'Метрика',value:0,unit:''},checklist:{title:'Чеклист',items:['Пункт 1','Пункт 2']},tasks:{title:'Дела',items:['Новое дело']},habit:{title:'Привычка'},timer:{title:'Фокус',minutes:25},chart:{title:'Динамика',values:[2,4,3,5,6,4,7]},calendar:{title:'Календарь'},image:{title:'Обложка'}};p.blocks.push({id:uid(),type,size:'m',data:defaults[type]});save();closeModal('blockModal');renderBlocks()});
+addBlockBtn.onclick=()=>openModal('blockModal');
+renamePageBtn.onclick=()=>{const p=currentPage();const n=prompt('Название страницы',p.name);if(n&&n.trim()){p.name=n.trim();save();title.textContent=p.name}};
+archivePageBtn.onclick=()=>{const p=currentPage();if(confirm('Архивировать страницу?')){p.archived=true;save();show('constructor')}};
+exportBtn.onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='systema-2-export.json';a.click();URL.revokeObjectURL(a.href)};
+mobilePagesBtn.onclick=()=>show('constructor');
+renderSidebar();renderStats();
+</script>
+</body></html>
