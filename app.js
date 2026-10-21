@@ -64,6 +64,7 @@ q('#mobileAdd').onclick=()=>openPageModal();
 function doneHabitsToday(){const d=state.habitLogs[todayKey()]||{};return state.habits.filter(h=>habitDone(h,d[h.id])).length}
 function habitDone(h,val){if(h.type==='bool')return !!val;return Number(val)>=Number(h.target||1)}
 function renderOverview(){
+  const od=q('#overviewDateLabel');if(od)od.textContent=new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});
   q('#ovPages').textContent=state.pages.filter(p=>!p.archived).length;
   q('#ovHabits').textContent=state.habits.length?doneHabitsToday()+' / '+state.habits.length:'0';
   const td=state.tasks.filter(t=>t.date===todayKey());q('#ovTasks').textContent=td.filter(t=>t.done).length+' / '+td.length;
@@ -228,16 +229,23 @@ function addBlock(type){
 }
 function renderPage(){
   const p=page();if(!p)return;q('#title').textContent=p.name;q('#pageDescriptionView').textContent=p.description||'';
-  q('#editPageBtn').textContent=editMode?'Готово':'Редактировать';q('#editBanner').classList.toggle('show',editMode);
+  q('#editPageBtn').textContent=editMode?'Готово':'Редактировать';
   q('#addBlockBtn').style.display=editMode?'inline-block':'none';q('#pageSettingsBtn').style.display=editMode?'inline-block':'none';q('#archivePageBtn').style.display=editMode?'inline-block':'none';
   const host=q('#blocks');host.innerHTML=p.blocks.length?p.blocks.map(blockHTML).join(''):'<div class="empty" style="grid-column:1/-1">Страница пустая. Нажми «Редактировать», затем «+ Блок».</div>';
   wirePage(host)
 }
-function toolsHTML(b){if(!editMode)return'';return '<div class="block-tools"><button data-block-up="'+b.id+'">↑</button><button data-block-down="'+b.id+'">↓</button><button data-block-size="'+b.id+'">'+b.size.toUpperCase()+'</button><button data-block-edit="'+b.id+'">⚙</button><button data-block-del="'+b.id+'">×</button></div>'}
+function toolsHTML(b){if(!editMode)return'';return '<div class="block-tools"><button title="Выше" data-block-up="'+b.id+'">↑</button><button title="Ниже" data-block-down="'+b.id+'">↓</button><button title="Размер блока" data-block-size="'+b.id+'">'+b.size.toUpperCase()+'</button><button title="Настройки блока" data-block-edit="'+b.id+'">⚙</button><button title="Удалить блок" data-block-del="'+b.id+'">×</button></div>'}
+function editableBlockTitle(b,label,title){
+  if(!editMode)return '<div><div class="eyebrow">'+label+'</div>'+(title?'<h3>'+esc(title)+'</h3>':'')+'</div>';
+  return '<div class="block-title-editor"><span>'+label+'</span><input class="block-title-input" data-inline-block-title="'+b.id+'" value="'+esc(title||'')+'" placeholder="Название блока"></div>';
+}
 function blockHTML(b){
   const d=b.data||{},cls='panel block '+(b.size||'m')+(editMode?' editing':'');
-  const head=(label,title='')=>'<div class="block-head"><div><div class="eyebrow">'+label+'</div>'+(title?'<h3>'+esc(title)+'</h3>':'')+'</div>'+toolsHTML(b)+'</div>';
-  if(b.type==='heading')return '<section class="'+cls+'">'+head('ЗАГОЛОВОК')+'<h2>'+esc(d.text||'Раздел')+'</h2></section>';
+  const head=(label,title='')=>'<div class="block-head">'+editableBlockTitle(b,label,title)+toolsHTML(b)+'</div>';
+  if(b.type==='heading'){
+    const headingTop=editMode?'<div class="block-head"><div class="block-title-editor"><span>ЗАГОЛОВОК</span><input class="block-title-input" data-inline-heading="'+b.id+'" value="'+esc(d.text||'Раздел')+'" placeholder="Текст заголовка"></div>'+toolsHTML(b)+'</div>':head('ЗАГОЛОВОК')+'<h2>'+esc(d.text||'Раздел')+'</h2>';
+    return '<section class="'+cls+'">'+headingTop+'</section>'
+  }
   if(b.type==='text')return '<section class="'+cls+'">'+head('ТЕКСТ',d.title)+'<div class="block-text">'+esc(d.text||'')+'</div></section>';
   if(b.type==='progress'){const pr=d.auto?pageProgress():{done:Number(d.current)||0,total:Number(d.target)||100,pct:Math.round((Number(d.current)||0)/(Number(d.target)||100)*100)};return '<section class="'+cls+'">'+head('ПРОГРЕСС',d.title)+'<div class="metric-main">'+clamp(pr.pct,0,100)+'%</div><div class="progress"><i style="width:'+clamp(pr.pct,0,100)+'%"></i></div><div class="auto-progress-note">'+(d.auto?'Считается по всем пунктам с галочками на этой странице · '+pr.done+' / '+pr.total:esc(d.current)+' / '+esc(d.target)+' '+esc(d.unit||''))+'</div></section>'}
   if(b.type==='metric')return '<section class="'+cls+'">'+head('МЕТРИКА',d.title)+'<div class="metric-main">'+esc(d.value||0)+' <small>'+esc(d.unit||'')+'</small></div>'+(d.target!==''?'<div class="muted tiny">Цель: '+esc(d.target)+' '+esc(d.unit||'')+'</div>':'')+(editMode?'':'<div class="inline-add"><input type="number" data-metric-value="'+b.id+'" value="'+esc(d.value||0)+'"><button class="btn small" data-metric-save="'+b.id+'">Записать</button></div>')+'</section>';
