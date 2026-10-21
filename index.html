@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0b1717">
   <title>Система 2</title>
-  <link rel="stylesheet" href="./styles.css?v=2">
+  <link rel="stylesheet" href="./styles.css?v=3">
 </head>
 <body>
 <div class="shell">
@@ -35,28 +35,37 @@
     </header>
 
     <section id="overview" class="view active">
-      <div class="hero">
-        <div class="panel">
-          <div class="eyebrow">СИСТЕМА</div>
-          <h2>База остаётся. Конструктор добавляется сверху.</h2>
-          <p class="muted">Привычки, план дня, календарь, аналитика и история живут как раньше. Свои страницы теперь можно собирать под конкретные вещи: семестр, проект, поездку, цель или что угодно ещё.</p>
-          <div class="actions">
-            <button class="btn primary" id="goConstructor">Открыть конструктор</button>
-            <button class="btn" id="goHabits">Привычки</button>
-            <button class="btn" id="goPlanner">План дня</button>
-          </div>
+      <div class="overview-head panel">
+        <div>
+          <p class="date-line" id="overviewDateLabel"></p>
+          <h2>Сегодня</h2>
         </div>
-        <div class="grid two">
-          <div class="panel stat"><span class="muted">Свои страницы</span><strong id="ovPages">0</strong></div>
-          <div class="panel stat"><span class="muted">Привычки сегодня</span><strong id="ovHabits">0</strong></div>
-          <div class="panel stat"><span class="muted">Задачи сегодня</span><strong id="ovTasks">0</strong></div>
-          <div class="panel stat"><span class="muted">Дата</span><strong id="ovDate">—</strong></div>
+        <div class="actions">
+          <button class="btn" id="goHabits">Привычки</button>
+          <button class="btn" id="goPlanner">План дня</button>
         </div>
       </div>
-      <div class="section-title"><h3>Сегодня</h3></div>
-      <div class="grid two">
-        <div><div class="eyebrow" style="margin-bottom:8px">ЗАДАЧИ</div><div id="overviewTasks"></div></div>
-        <div><div class="eyebrow" style="margin-bottom:8px">ПРИВЫЧКИ</div><div id="overviewHabits" class="habit-grid"></div></div>
+      <div class="overview-grid">
+        <article class="panel overview-section">
+          <div class="section-head">
+            <div><span class="section-kicker">ПЛАН</span><h2>Ближайшее</h2></div>
+            <button class="btn small ghost" data-view="planner">Открыть</button>
+          </div>
+          <div id="overviewTasks"></div>
+        </article>
+        <article class="panel overview-section">
+          <div class="section-head">
+            <div><span class="section-kicker">ПРИВЫЧКИ</span><h2>На сегодня</h2></div>
+            <button class="btn small ghost" data-view="habits">Открыть</button>
+          </div>
+          <div id="overviewHabits" class="habit-grid"></div>
+        </article>
+      </div>
+      <div class="panel stats-strip">
+        <div><strong id="ovHabits">0</strong><span>привычки сегодня</span></div>
+        <div><strong id="ovTasks">0</strong><span>задачи сегодня</span></div>
+        <div><strong id="ovPages">0</strong><span>свои страницы</span></div>
+        <div><strong id="ovDate">—</strong><span>дата</span></div>
       </div>
     </section>
 
@@ -112,19 +121,20 @@
     </section>
 
     <section id="constructor" class="view">
-      <div class="panel" style="margin-bottom:14px">
-        <div class="eyebrow">СВОБОДНЫЕ СТРАНИЦЫ</div>
-        <h2 style="margin:5px 0 8px">Без шаблонов</h2>
-        <p class="muted">Создаёшь страницу, даёшь ей название и описание, потом собираешь блоки как хочешь. Например: «МИФИ 5 семестр» → предметы → лабораторные → галочки → нужный пункт можно отправить в план дня.</p>
-        <button class="btn primary" onclick="document.getElementById('newPageBtn').click()">+ Новая страница</button>
+      <div class="panel constructor-head">
+        <div>
+          <span class="section-kicker">МОИ СТРАНИЦЫ</span>
+          <h2>Свои разделы</h2>
+          <p>Страница состоит только из тех блоков, которые ты добавишь сама.</p>
+        </div>
+        <button class="btn primary" onclick="document.getElementById('newPageBtn').click()">Новая страница</button>
       </div>
       <div id="pageCards" class="page-cards"></div>
     </section>
 
     <section id="customPage" class="view">
-      <div id="pageDescriptionView" class="muted" style="margin-top:-12px;margin-bottom:14px"></div>
-      <div id="editBanner" class="edit-banner"><span>Режим редактирования включён</span><span class="tiny">Меняй блоки, группы и пункты</span></div>
-      <div class="actions" style="margin-bottom:12px">
+      <div id="pageDescriptionView" class="page-description"></div>
+      <div class="panel page-toolbar">
         <button class="btn" id="editPageBtn">Редактировать</button>
         <button class="btn primary" id="addBlockBtn" style="display:none">+ Блок</button>
         <button class="btn ghost" id="pageSettingsBtn" style="display:none">Настройки страницы</button>
@@ -226,6 +236,6 @@
 </div></div>
 
 <div id="toast" class="toast"></div>
-<script src="./app.js?v=2"></script>
+<script src="./app.js?v=3"></script>
 </body>
 </html>
