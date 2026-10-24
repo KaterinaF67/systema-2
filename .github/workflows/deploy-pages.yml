@@ -17,13 +17,41 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Systema 2 add-on
+        uses: actions/checkout@v4
+        with:
+          path: addon
+
+      - name: Checkout untouched Systema v1
+        uses: actions/checkout@v4
+        with:
+          repository: KaterinaF67/systema_app
+          ref: f59d1de03ae625fb588d06d7ad151873e5df9f50
+          path: base
+
+      - name: Assemble site
+        run: |
+          mkdir publish
+          cp -a base/web/. publish/
+          cp addon/pages.css publish/pages.css
+          cp addon/pages.js publish/pages.js
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("publish/index.html")
+          s = p.read_text(encoding="utf-8")
+          s = s.replace("</head>", '  <link rel="stylesheet" href="pages.css?v=1" />\n</head>')
+          s = s.replace("</body>", '  <script src="pages.js?v=1"></script>\n</body>')
+          p.write_text(s, encoding="utf-8")
+          PY
+
       - uses: actions/configure-pages@v5
         with:
           enablement: true
+
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: publish
+
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
